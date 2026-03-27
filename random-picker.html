@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회마 뽑기 - 이번 달의 회식 마스터는?!</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      background: linear-gradient(135deg, #fdf6e3 0%, #fff1e6 50%, #fce4ec 100%);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+    .container {
+      background: #fff;
+      border-radius: 28px;
+      padding: 36px;
+      width: 460px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #f0e6dd;
+    }
+    h1 {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 900;
+      margin-bottom: 28px;
+      background: linear-gradient(135deg, #ff6b6b, #ffa94d, #ffd43b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .member-input {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    input {
+      flex: 1;
+      padding: 11px 16px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      background: #fafafa;
+      color: #333;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #ffa94d; background: #fff; }
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    button:active { transform: scale(0.96); }
+    .btn-add {
+      background: linear-gradient(135deg, #ffa94d, #ff922b);
+      color: #fff;
+      box-shadow: 0 3px 12px rgba(255, 146, 43, 0.3);
+    }
+    .btn-add:hover { box-shadow: 0 4px 16px rgba(255, 146, 43, 0.4); }
+    .btn-save-default {
+      background: #fff;
+      border: 1.5px dashed #ddd;
+      color: #aaa;
+      font-size: 12px;
+      padding: 7px 14px;
+      border-radius: 10px;
+      display: block;
+      margin: 0 auto 14px;
+      font-weight: 400;
+    }
+    .btn-save-default:hover { border-color: #ffa94d; color: #ff922b; }
+    .member-list {
+      list-style: none;
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .member-list::-webkit-scrollbar { width: 4px; }
+    .member-list::-webkit-scrollbar-thumb { background: #e0d6cc; border-radius: 2px; }
+    .member-list li {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: linear-gradient(135deg, #fff5eb, #fff0f0);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1px solid #f5e6da;
+      transition: transform 0.15s;
+    }
+    .member-list li:hover { transform: translateY(-1px); }
+    .member-list li .remove {
+      background: none;
+      border: none;
+      color: #ddb8a0;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .member-list li .remove:hover { color: #ff6b6b; }
+    .btn-pick {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 900;
+      border-radius: 16px;
+      letter-spacing: 2px;
+      box-shadow: 0 6px 24px rgba(238, 90, 36, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-pick::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+      transition: transform 0.5s;
+      transform: translateX(-100%);
+    }
+    .btn-pick:hover::after { transform: translateX(100%); }
+    .btn-pick:hover { box-shadow: 0 8px 32px rgba(238, 90, 36, 0.4); }
+    .btn-pick:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
+    /* 룰렛 원형 */
+    .roulette-area {
+      text-align: center;
+      margin-top: 28px;
+      min-height: 50px;
+    }
+    .roulette-stage {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .roulette-stage.active { display: flex; }
+    .roulette-wrapper {
+      position: relative;
+      width: 320px;
+      height: 320px;
+    }
+    .roulette-wheel {
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      position: relative;
+      transition: none;
+      box-shadow: 0 0 0 6px #fff, 0 0 0 8px #ffd6a0, 0 8px 30px rgba(0,0,0,0.1);
+    }
+    .roulette-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 54px; height: 54px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .roulette-pointer {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      transition: transform 0.1s;
+    }
+    .roulette-pointer.bounce {
+      animation: pointerBounce 0.15s ease;
+    }
+    @keyframes pointerBounce {
+      0% { transform: translateX(-50%) rotate(0deg); }
+      50% { transform: translateX(-50%) rotate(8deg); }
+      100% { transform: translateX(-50%) rotate(0deg); }
+    }
+
+    /* 카운트다운 */
+    .countdown-display {
+      font-size: 80px;
+      font-weight: 900;
+      text-align: center;
+      animation: countBoom 0.6s cubic-bezier(0.17, 0.67, 0.21, 1.3);
+    }
+    .countdown-display.c3 { color: #ffa94d; }
+    .countdown-display.c2 { color: #ff6b6b; }
+    .countdown-display.c1 { color: #ee5a24; }
+    @keyframes countBoom {
+      0% { transform: scale(2.5); opacity: 0; }
+      40% { transform: scale(0.85); opacity: 1; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 텐션 바 */
+    .tension-bar {
+      width: 280px;
+      height: 8px;
+      background: #f0e6dd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .tension-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #51cf66, #ffd43b, #ff6b6b);
+      background-size: 300% 100%;
+      transition: width 0.15s;
+    }
+
+    /* 최종 결과 */
+    .final-result {
+      text-align: center;
+      display: none;
+      padding: 20px 0;
+    }
+    .final-result.show {
+      display: block;
+      animation: resultSlideUp 0.5s cubic-bezier(0.17, 0.67, 0.21, 1.3);
+    }
+    @keyframes resultSlideUp {
+      0% { transform: translateY(30px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .final-emoji {
+      font-size: 60px;
+      animation: emojiSpin 0.8s cubic-bezier(0.17, 0.67, 0.21, 1.3);
+    }
+    @keyframes emojiSpin {
+      0% { transform: scale(0) rotate(-180deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .final-name {
+      font-size: 52px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 8px 0;
+      animation: namePop 0.6s 0.2s cubic-bezier(0.17, 0.67, 0.21, 1.3) both;
+    }
+    @keyframes namePop {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .final-label {
+      font-size: 16px;
+      color: #b0a090;
+      font-weight: 700;
+      animation: labelFade 0.4s 0.5s ease both;
+    }
+    @keyframes labelFade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* 축하 파티클 */
+    .confetti-container {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 100;
+      overflow: hidden;
+    }
+    .confetti {
+      position: absolute;
+      top: -20px;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 110vh; transform: rotate(1080deg) scale(0.5); opacity: 0; }
+    }
+
+    .count {
+      text-align: center;
+      font-size: 13px;
+      color: #c0b0a0;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .history {
+      margin-top: 24px;
+      border-top: 1.5px solid #f5ebe0;
+      padding-top: 16px;
+    }
+    .history h3 { font-size: 14px; color: #c0b0a0; margin-bottom: 10px; font-weight: 700; }
+    .history ul { list-style: none; font-size: 13px; color: #b0a090; }
+    .history li {
+      padding: 5px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .history li::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ffd6a0; }
+    .history li strong { color: #ee5a24; }
+
+    /* 쉐이크 */
+    .shake { animation: shake 0.06s infinite alternate; }
+    @keyframes shake {
+      0% { transform: translateX(-1.5px) rotate(-0.3deg); }
+      100% { transform: translateX(1.5px) rotate(0.3deg); }
+    }
+    .glow {
+      box-shadow: 0 0 40px rgba(255, 107, 107, 0.25), 0 8px 40px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <h1>🔥 이 달의 회마(회식마스터)는?!</h1>
+
+    <div class="member-input">
+      <input type="text" id="nameInput" placeholder="팀원 이름 입력" />
+      <button class="btn-add" onclick="addMember()">추가</button>
+    </div>
+
+    <div class="count" id="count"></div>
+    <ul class="member-list" id="memberList"></ul>
+    <button class="btn-save-default" id="saveDefaultBtn" onclick="saveAsDefault()" style="display:none">현재 목록을 기본값으로 저장</button>
+
+    <button class="btn-pick" id="pickBtn" onclick="startPick()" disabled>뽑기!</button>
+
+    <div class="roulette-area" id="rouletteArea"></div>
+
+    <div class="history" id="historySection" style="display:none">
+      <h3>📋 이전 결과</h3>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+
+  <div class="confetti-container" id="confettiContainer"></div>
+
+  <script>
+    const DEFAULT_MEMBERS = [
+      '김덕우', '김영수', '김주현', '김지희', '류지혜',
+      '박지연', '심다송', '안려환', '안세빈', '우아름',
+      '이은결', '이종혁', '천혜빈', '최혜린', '황수빈'
+    ];
+
+    const COLORS = [
+      '#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#38d9a9',
+      '#4dabf7', '#748ffc', '#da77f2', '#f783ac', '#e599f7',
+      '#63e6be', '#a9e34b', '#ffc078', '#74c0fc', '#b197fc'
+    ];
+
+    // 커스텀 기본값이 있으면 그걸 사용, 없으면 코드의 DEFAULT_MEMBERS 사용
+    function getEffectiveDefault() {
+      const custom = localStorage.getItem('customDefault');
+      return custom ? JSON.parse(custom) : [...DEFAULT_MEMBERS];
+    }
+
+    // 멤버는 항상 기본값에서 시작 (새로고침 = 리셋)
+    let members = [...getEffectiveDefault()];
+    let history = JSON.parse(localStorage.getItem('pickHistory') || '[]');
+
+    function save() {
+      // 히스토리만 저장, 멤버는 "기본값으로 저장" 할 때만 영구 반영
+      localStorage.setItem('pickHistory', JSON.stringify(history));
+    }
+
+    function isMembersDirty() {
+      const def = getEffectiveDefault();
+      if (members.length !== def.length) return true;
+      const s1 = [...members].sort(), s2 = [...def].sort();
+      return s1.some((v, i) => v !== s2[i]);
+    }
+
+    function render() {
+      const list = document.getElementById('memberList');
+      const count = document.getElementById('count');
+      const btn = document.getElementById('pickBtn');
+      const saveBtn = document.getElementById('saveDefaultBtn');
+      list.innerHTML = members.map((name, i) =>
+        `<li style="border-color: ${COLORS[i % COLORS.length]}33">${name}<button class="remove" data-index="${i}">✕</button></li>`
+      ).join('');
+      list.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeMember(Number(btn.dataset.index));
+        });
+      });
+      count.textContent = members.length > 0 ? `${members.length}명 참여` : '';
+      btn.disabled = members.length < 2;
+      saveBtn.style.display = isMembersDirty() ? 'block' : 'none';
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const section = document.getElementById('historySection');
+      const list = document.getElementById('historyList');
+      if (history.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      list.innerHTML = history.slice(-5).reverse().map(h =>
+        `<li>${h.date} — <strong>${h.name}</strong></li>`
+      ).join('');
+    }
+
+    function addMember() {
+      const input = document.getElementById('nameInput');
+      const name = input.value.trim();
+      if (!name) return;
+      if (members.includes(name)) { input.value = ''; return alert('이미 등록된 이름입니다.'); }
+      members.push(name);
+      input.value = '';
+      input.focus();
+      render();
+    }
+
+    function removeMember(index) {
+      members.splice(index, 1);
+      render();
+    }
+
+    // 원형 룰렛 SVG 생성
+    function createRouletteWheel(highlightIndex) {
+      const n = members.length;
+      const size = 320;
+      const cx = size / 2, cy = size / 2, r = size / 2 - 4;
+      let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
+
+      for (let i = 0; i < n; i++) {
+        const startAngle = (i / n) * 360 - 90;
+        const endAngle = ((i + 1) / n) * 360 - 90;
+        const startRad = startAngle * Math.PI / 180;
+        const endRad = endAngle * Math.PI / 180;
+        const x1 = cx + r * Math.cos(startRad);
+        const y1 = cy + r * Math.sin(startRad);
+        const x2 = cx + r * Math.cos(endRad);
+        const y2 = cy + r * Math.sin(endRad);
+        const large = endAngle - startAngle > 180 ? 1 : 0;
+        const color = COLORS[i % COLORS.length];
+        const opacity = (highlightIndex === i) ? 1 : 0.7;
+
+        svg += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${color}" opacity="${opacity}" stroke="#fff" stroke-width="2"/>`;
+
+        // 텍스트
+        const midAngle = ((startAngle + endAngle) / 2) * Math.PI / 180;
+        const textR = r * 0.65;
+        const tx = cx + textR * Math.cos(midAngle);
+        const ty = cy + textR * Math.sin(midAngle);
+        const rotation = (startAngle + endAngle) / 2 + 90;
+        const fontSize = n > 12 ? 11 : 13;
+
+        svg += `<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rotation},${tx},${ty})" fill="#fff" font-size="${fontSize}" font-weight="700" font-family="'Noto Sans KR',sans-serif" style="text-shadow:0 1px 3px rgba(0,0,0,0.3)">${members[i]}</text>`;
+      }
+
+      svg += '</svg>';
+      return svg;
+    }
+
+    function startPick() {
+      const btn = document.getElementById('pickBtn');
+      const area = document.getElementById('rouletteArea');
+      const container = document.getElementById('container');
+
+      btn.disabled = true;
+      container.classList.remove('glow');
+
+      const picked = members[Math.floor(Math.random() * members.length)];
+      const pickedIndex = members.indexOf(picked);
+
+      // 카운트다운
+      let cd = 3;
+      function doCountdown() {
+        if (cd > 0) {
+          area.innerHTML = `<div class="countdown-display c${cd}">${cd}</div>`;
+          cd--;
+          setTimeout(doCountdown, 650);
+        } else {
+          area.innerHTML = `<div class="countdown-display c1" style="color:#ee5a24">GO!</div>`;
+          setTimeout(() => runRoulette(picked, pickedIndex), 400);
+        }
+      }
+      doCountdown();
+    }
+
+    function runRoulette(picked, pickedIndex) {
+      const area = document.getElementById('rouletteArea');
+      const container = document.getElementById('container');
+      const btn = document.getElementById('pickBtn');
+      const n = members.length;
+
+      // 목표: 당첨자 조각이 포인터(12시) 위치에 올 각도
+      // 각 조각의 중앙 각도 = (index / n) * 360
+      // 포인터가 12시이므로 조각의 중앙이 0도(12시)에 오려면
+      const sliceCenter = (pickedIndex / n) * 360;
+      // 시계방향 회전이므로 360 - sliceCenter가 필요 + 풀 회전 여러바퀴
+      const fullSpins = 5 + Math.floor(Math.random() * 3); // 5~7바퀴
+      const targetAngle = fullSpins * 360 + (360 - sliceCenter);
+
+      area.innerHTML = `
+        <div class="roulette-stage active" id="rouletteStage">
+          <div class="roulette-wrapper">
+            <div class="roulette-pointer" id="roulettePointer">📍</div>
+            <div class="roulette-wheel" id="rouletteWheel">${createRouletteWheel(-1)}</div>
+            <div class="roulette-center">🍽️</div>
+          </div>
+          <div class="tension-bar">
+            <div class="tension-fill" id="tensionFill"></div>
+          </div>
+          <div class="final-result" id="finalResult">
+            <div class="final-emoji">🎊</div>
+            <div class="final-name" id="finalName"></div>
+            <div class="final-label">이 달의 회마 등극 👑</div>
+          </div>
+        </div>
+      `;
+
+      const wheel = document.getElementById('rouletteWheel');
+      const tensionFill = document.getElementById('tensionFill');
+      const pointer = document.getElementById('roulettePointer');
+      const totalDuration = 5500;
+      const startTime = performance.now();
+      let lastSliceIndex = -1;
+
+      container.classList.add('shake');
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        let progress = Math.min(elapsed / totalDuration, 1);
+
+        // 강한 감속 이징 (끝에서 극적으로 느려짐)
+        const eased = 1 - Math.pow(1 - progress, 5);
+        const currentAngle = targetAngle * eased;
+
+        wheel.style.transform = `rotate(${currentAngle}deg)`;
+
+        // 텐션 바
+        tensionFill.style.width = `${progress * 100}%`;
+        tensionFill.style.backgroundPosition = `${progress * 200}% 0`;
+
+        // 현재 포인터가 가리키는 조각 감지
+        const normalizedAngle = ((360 - (currentAngle % 360)) + 360) % 360;
+        const currentSlice = Math.floor((normalizedAngle / 360) * n) % n;
+        if (currentSlice !== lastSliceIndex) {
+          lastSliceIndex = currentSlice;
+          // 포인터 바운스
+          pointer.classList.remove('bounce');
+          void pointer.offsetWidth;
+          pointer.classList.add('bounce');
+          // 휠 하이라이트 업데이트
+          wheel.innerHTML = createRouletteWheel(currentSlice);
+        }
+
+        // 진행에 따른 효과
+        if (progress > 0.7) container.classList.add('glow');
+        if (progress > 0.88) container.classList.remove('shake');
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // 완료
+          wheel.innerHTML = createRouletteWheel(pickedIndex);
+          setTimeout(() => {
+            document.querySelector('.roulette-wrapper').style.display = 'none';
+            document.querySelector('.tension-bar').style.display = 'none';
+            container.classList.remove('shake', 'glow');
+
+            const finalResult = document.getElementById('finalResult');
+            const finalName = document.getElementById('finalName');
+            finalName.textContent = picked;
+            finalResult.classList.add('show');
+            launchConfetti();
+
+            const today = new Date().toLocaleDateString('ko-KR');
+            history.push({ date: today, name: picked });
+            save();
+            btn.disabled = false;
+            renderHistory();
+          }, 600);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function launchConfetti() {
+      const c = document.getElementById('confettiContainer');
+      c.innerHTML = '';
+      const shapes = ['circle', 'square', 'star'];
+      for (let i = 0; i < 100; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const size = 8 + Math.random() * 10;
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.background = color;
+        el.style.borderRadius = shape === 'circle' ? '50%' : shape === 'star' ? '2px' : '0';
+        if (shape === 'star') el.style.transform = 'rotate(45deg)';
+        el.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+        el.style.animationDelay = Math.random() * 0.6 + 's';
+        c.appendChild(el);
+      }
+      setTimeout(() => c.innerHTML = '', 6000);
+    }
+
+    function saveAsDefault() {
+      localStorage.setItem('customDefault', JSON.stringify([...members]));
+      save();
+      render();
+      alert('현재 목록이 기본값으로 저장되었습니다!');
+    }
+
+    document.getElementById('nameInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing) addMember();
+    });
+
+    render();
+  </script>
+</body>
+</html>
