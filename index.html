@@ -231,6 +231,7 @@
 <body>
   <div class="container" id="container">
     <h1>🔥 이 달의 회마(회식마스터)는?!</h1>
+    <div id="randomQuote" style="text-align:center;font-size:13px;color:#c0b0a0;margin:-20px 0 24px;font-weight:700"></div>
     <div class="member-input">
       <input type="text" id="nameInput" placeholder="팀원 이름 입력" />
       <button class="btn-add" onclick="addMember()">추가</button>
@@ -1111,6 +1112,31 @@
 
     document.getElementById('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)addMember();});
     render(); showPreview();
+
+    // 랜덤 문구
+    const QUOTES=[
+      '"배고플 때 화내지 말고, 회식을 잡아라" 🍖',
+      '"오늘 뭐 먹지?"는 인류 최대의 난제 🤔',
+      '"회식은 팀빌딩이고, 고기는 사랑입니다" 🥩',
+      '"칼로리는 맛있으면 0이 됩니다" 🍕',
+      '"다이어트는 내일부터, 회식은 오늘부터" 🍽️',
+      '"인생은 짧고 메뉴판은 길다" 📋',
+      '"같이 먹으면 더 맛있는 건 과학입니다" 🧪',
+      '"회마의 어깨는 무겁지만 배는 더 무겁다" 💪',
+      '"맛집 찾는 건 재능, 예약하는 건 능력" 📱',
+      '"빈속에 일하면 코드에 버그가 생깁니다" 🐛',
+      '"월급은 통장을 스쳐가고, 회식은 마음에 남는다" 💸',
+      '"좋은 팀의 비밀? 함께 먹는 밥 한 끼" 🍚',
+      '"고기 앞에서는 모두가 평등하다" ⚖️',
+      '"메뉴 고민 시간 > 실제 먹는 시간" ⏰',
+      '"회식 장소는 회마가, 맛은 셰프가 책임진다" 👨‍🍳',
+      '"오늘의 회식이 내일의 활력입니다" ⚡',
+      '"소확행: 소소하지만 확실한 회식의 행복" 🎉',
+      '"삼겹살은 구울수록 진리에 가까워진다" 🔥',
+      '"팀워크의 시작은 같은 테이블에서" 🪑',
+      '"런치 메뉴 결정보다 어려운 건 디너 메뉴 결정" 😵',
+    ];
+    document.getElementById('randomQuote').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
 
     // ===== Firebase 초기화 =====
     firebase.initializeApp({
