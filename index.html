@@ -151,7 +151,18 @@
     let currentTheme = localStorage.getItem('theme') || 'wheel';
     function getEffectiveDefault() { const c = localStorage.getItem('customDefault'); return c ? JSON.parse(c) : [...DEFAULT_MEMBERS]; }
     let members = [...getEffectiveDefault()];
-    let history = JSON.parse(localStorage.getItem('pickHistory') || '[]');
+    const DEFAULT_HISTORY = [
+      {date:'2026. 1.',name:'이은결'},
+      {date:'2026. 2.',name:'김덕우'},
+      {date:'2026. 3.',name:'우아름'}
+    ];
+    let history = JSON.parse(localStorage.getItem('pickHistory') || 'null');
+    if(!history||history.length===0){history=[...DEFAULT_HISTORY];localStorage.setItem('pickHistory',JSON.stringify(history));}
+    // 기본 히스토리가 누락되어 있으면 앞에 추가
+    DEFAULT_HISTORY.forEach(dh=>{
+      if(!history.some(h=>h.date===dh.date&&h.name===dh.name)){history.unshift(dh);}
+    });
+    localStorage.setItem('pickHistory',JSON.stringify(history));
     function save() { localStorage.setItem('pickHistory', JSON.stringify(history)); }
     function isMembersDirty() { const d=getEffectiveDefault(); if(members.length!==d.length)return true; const a=[...members].sort(),b=[...d].sort(); return a.some((v,i)=>v!==b[i]); }
 
@@ -165,7 +176,7 @@
     function renderHistory() {
       const s=document.getElementById('historySection'), l=document.getElementById('historyList');
       if(!history.length){s.style.display='none';return;} s.style.display='block';
-      l.innerHTML=history.slice(-5).reverse().map(h=>`<li>${h.date} — <strong>${h.name}</strong></li>`).join('');
+      l.innerHTML=history.slice().reverse().map(h=>`<li>${h.date} — <strong>${h.name}</strong></li>`).join('');
     }
     function addMember() { const i=document.getElementById('nameInput'),n=i.value.trim(); if(!n)return; if(members.includes(n)){i.value='';return alert('이미 등록된 이름입니다.');} members.push(n);i.value='';i.focus();render();showPreview(); }
     function removeMember(i) { members.splice(i,1); render(); showPreview(); }
