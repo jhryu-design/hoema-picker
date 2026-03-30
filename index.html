@@ -461,7 +461,7 @@
       const confirmBtn=fr.querySelector('.btn-confirm');
       if(confirmBtn)confirmBtn.onclick=()=>{
         history.push({date:new Date().toLocaleDateString('ko-KR'),name:picked});
-        save(); renderHistory();
+        save();
         confirmBtn.textContent='✅ 확정 완료!';
         confirmBtn.disabled=true;
         confirmBtn.style.opacity='0.5';
