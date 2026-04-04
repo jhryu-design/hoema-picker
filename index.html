@@ -306,6 +306,8 @@
     ];
     const COLORS = ['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#38d9a9','#4dabf7','#748ffc','#da77f2','#f783ac','#e599f7','#63e6be','#a9e34b','#ffc078','#74c0fc','#b197fc'];
 
+    function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
     let currentTheme = localStorage.getItem('theme') || 'wheel';
     function getEffectiveDefault() { const c = localStorage.getItem('customDefault'); return c ? JSON.parse(c) : [...DEFAULT_MEMBERS]; }
     let members = [...getEffectiveDefault()];
@@ -316,7 +318,7 @@
 
     function render() {
       const list=document.getElementById('memberList'), cnt=document.getElementById('count'), btn=document.getElementById('pickBtn'), sb=document.getElementById('saveDefaultBtn');
-      list.innerHTML=members.map((n,i)=>`<li style="border-color:${COLORS[i%COLORS.length]}33">${n}<button class="remove" data-index="${i}">✕</button></li>`).join('');
+      list.innerHTML=members.map((n,i)=>`<li style="border-color:${COLORS[i%COLORS.length]}33">${esc(n)}<button class="remove" data-index="${i}">✕</button></li>`).join('');
       list.querySelectorAll('.remove').forEach(b=>{b.addEventListener('click',e=>{e.stopPropagation();removeMember(Number(b.dataset.index));});});
       cnt.textContent=members.length>0?`${members.length}명 참여`:'';
       btn.disabled=members.length<2; sb.style.display=isMembersDirty()?'block':'none';
@@ -348,9 +350,9 @@
         <div class="dinner-card">
           <div class="dinner-emoji">${d.emoji||'🍽️'}</div>
           <div class="dinner-info">
-            <div class="dinner-date">${d.date}</div>
-            <div class="dinner-master">👑 회마: ${d.master}</div>
-            <div class="dinner-place">📍 ${d.link?`<a href="${d.link}" target="_blank">${d.place}</a>`:d.place}</div>
+            <div class="dinner-date">${esc(d.date)}</div>
+            <div class="dinner-master">👑 회마: ${esc(d.master)}</div>
+            <div class="dinner-place">📍 ${d.link?`<a href="${esc(d.link)}" target="_blank">${esc(d.place)}</a>`:esc(d.place)}</div>
           </div>
         </div>
       `).join('')||'<div style="text-align:center;color:#ccc;font-size:14px;padding:20px">아직 회식 기록이 없습니다</div>';
@@ -384,7 +386,7 @@
       },
       slot(area) {
         const s=members.slice(0,5);
-        area.innerHTML=`<div style="text-align:center"><div style="width:180px;margin:0 auto;background:#fffaf5;border:2px solid #f0e6dd;border-radius:12px;padding:8px 0">${s.map((n,i)=>`<div style="padding:6px 0;font-size:${i===2?'18px':'14px'};font-weight:${i===2?900:400};color:${i===2?'#ee5a24':'#ccc'}">${n}</div>`).join('')}</div><div style="font-size:12px;color:#c0b0a0;margin-top:8px">🎰 빠르게 돌다가 서서히 멈춤!</div></div>`;
+        area.innerHTML=`<div style="text-align:center"><div style="width:180px;margin:0 auto;background:#fffaf5;border:2px solid #f0e6dd;border-radius:12px;padding:8px 0">${s.map((n,i)=>`<div style="padding:6px 0;font-size:${i===2?'18px':'14px'};font-weight:${i===2?900:400};color:${i===2?'#ee5a24':'#ccc'}">${esc(n)}</div>`).join('')}</div><div style="font-size:12px;color:#c0b0a0;margin-top:8px">🎰 빠르게 돌다가 서서히 멈춤!</div></div>`;
       },
       card(area) {
         const c=members.slice(0,6);
@@ -407,7 +409,7 @@
           <div style="position:relative;width:200px;height:130px;margin:0 auto">
             <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:160px;height:100px;border-radius:50% 50% 20px 20px;background:linear-gradient(180deg,rgba(255,255,255,0.3),rgba(200,220,240,0.2));border:3px solid #c8d8e8;overflow:hidden">
               <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:10px 8px">
-                ${members.slice(0,8).map((n,i)=>`<div style="width:32px;height:32px;border-radius:50%;background:${COLORS[i%COLORS.length]};display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:900;box-shadow:inset 0 -2px 4px rgba(0,0,0,0.15)">${n}</div>`).join('')}
+                ${members.slice(0,8).map((n,i)=>`<div style="width:32px;height:32px;border-radius:50%;background:${COLORS[i%COLORS.length]};display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:900;box-shadow:inset 0 -2px 4px rgba(0,0,0,0.15)">${esc(n)}</div>`).join('')}
               </div>
             </div>
             <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:30px;height:35px;background:linear-gradient(180deg,#ffd6a0,#ffa94d);border-radius:4px 4px 8px 8px;border:2px solid #e8a040"></div>
@@ -483,7 +485,7 @@
     function canvasSize(){return isMobile()?{w:320,h:340}:{w:460,h:440};}
 
     // ===== 1: 회전판 =====
-    function wheelSVG(hi,sz){sz=sz||360;const n=members.length,cx=sz/2,cy=sz/2,r=sz/2-4;let s=`<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">`;for(let i=0;i<n;i++){const sa=(i/n)*360-90,ea=((i+1)/n)*360-90,sr=sa*Math.PI/180,er=ea*Math.PI/180;s+=`<path d="M${cx},${cy} L${cx+r*Math.cos(sr)},${cy+r*Math.sin(sr)} A${r},${r} 0 ${ea-sa>180?1:0} 1 ${cx+r*Math.cos(er)},${cy+r*Math.sin(er)} Z" fill="${COLORS[i%COLORS.length]}" opacity="${hi===i?1:0.7}" stroke="#fff" stroke-width="2"/>`;const ma=((sa+ea)/2)*Math.PI/180,tx=cx+r*0.65*Math.cos(ma),ty=cy+r*0.65*Math.sin(ma);s+=`<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${(sa+ea)/2+90},${tx},${ty})" fill="#fff" font-size="${n>12?11:14}" font-weight="700" font-family="'Noto Sans KR',sans-serif" style="text-shadow:0 1px 3px rgba(0,0,0,0.3)">${members[i]}</text>`;}return s+'</svg>';}
+    function wheelSVG(hi,sz){sz=sz||360;const n=members.length,cx=sz/2,cy=sz/2,r=sz/2-4;let s=`<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">`;for(let i=0;i<n;i++){const sa=(i/n)*360-90,ea=((i+1)/n)*360-90,sr=sa*Math.PI/180,er=ea*Math.PI/180;s+=`<path d="M${cx},${cy} L${cx+r*Math.cos(sr)},${cy+r*Math.sin(sr)} A${r},${r} 0 ${ea-sa>180?1:0} 1 ${cx+r*Math.cos(er)},${cy+r*Math.sin(er)} Z" fill="${COLORS[i%COLORS.length]}" opacity="${hi===i?1:0.7}" stroke="#fff" stroke-width="2"/>`;const ma=((sa+ea)/2)*Math.PI/180,tx=cx+r*0.65*Math.cos(ma),ty=cy+r*0.65*Math.sin(ma);s+=`<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${(sa+ea)/2+90},${tx},${ty})" fill="#fff" font-size="${n>12?11:14}" font-weight="700" font-family="'Noto Sans KR',sans-serif" style="text-shadow:0 1px 3px rgba(0,0,0,0.3)">${esc(members[i])}</text>`;}return s+'</svg>';}
 
     function runWheel(picked,pi){const area=document.getElementById('animArea'),n=members.length,tgt=(5+Math.floor(Math.random()*3))*360+(360-(pi/n)*360);const sz=animSize();
     area.innerHTML=`<div class="roulette-wrapper" style="width:${sz}px;height:${sz}px"><div class="roulette-pointer" id="rP">📍</div><div class="roulette-wheel" id="rW" style="width:${sz}px;height:${sz}px">${wheelSVG(-1,sz)}</div><div class="roulette-center">🍽️</div></div><div class="tension-bar"><div class="tension-fill" id="tF"></div></div>${makeFinal()}`;
@@ -499,7 +501,7 @@
         <div style="position:relative;max-width:390px;width:100%;margin:0 auto">
           <div class="slot-machine" style="width:340px">
             <div class="slot-window"><div class="slot-highlight"></div>
-              <div class="slot-track" id="sT">${names.map(n=>`<div class="slot-item">${n}</div>`).join('')}</div>
+              <div class="slot-track" id="sT">${names.map(n=>`<div class="slot-item">${esc(n)}</div>`).join('')}</div>
             </div>
             <div class="slot-label" id="slotLabel">🎰 레버를 당기는 중...</div>
           </div>
@@ -578,7 +580,7 @@
 
     // ===== 3: 카드뒤집기 =====
     function runCards(picked){const area=document.getElementById('animArea'),sh=shuffle(members),pi=sh.indexOf(picked);
-    area.innerHTML=`<div class="card-grid">${sh.map((n,i)=>`<div class="card"><div class="card-inner" id="c${i}"><div class="card-front">?</div><div class="card-back ${n===picked?'winner':''}">${n}</div></div></div>`).join('')}</div><div class="tension-bar"><div class="tension-fill" id="tF"></div></div>${makeFinal()}`;
+    area.innerHTML=`<div class="card-grid">${sh.map((n,i)=>`<div class="card"><div class="card-inner" id="c${i}"><div class="card-front">?</div><div class="card-back ${n===picked?'winner':''}">${esc(n)}</div></div></div>`).join('')}</div><div class="tension-bar"><div class="tension-fill" id="tF"></div></div>${makeFinal()}`;
     const order=shuffle([...Array(sh.length).keys()].filter(i=>i!==pi));order.push(pi);const fl=document.getElementById('tF');let idx=0;
     function flip(){if(idx>=order.length)return;document.getElementById(`c${order[idx]}`).classList.add('flipped');fl.style.width=(idx+1)/order.length*100+'%';fl.style.backgroundPosition=(idx+1)/order.length*200+'% 0';idx++;if(idx<order.length){const r=order.length-idx;setTimeout(flip,r>5?200:r>3?400:r>1?700:1200);}else setTimeout(()=>showResult(picked),800);}
     setTimeout(flip,500);}
@@ -1258,7 +1260,7 @@
       list.innerHTML='';
       for(let i=0;i<restCount;i++){
         const div=document.createElement('div');div.className='rest-row';div.style.flexWrap='wrap';
-        div.innerHTML=`<input class="vote-input rest-name" placeholder="식당 ${i+1} 이름" data-idx="${i}" value="${restValues[i]?.name||''}" style="flex:1;min-width:120px"/><input class="vote-input rest-link" placeholder="링크 (선택)" data-idx="${i}" value="${restValues[i]?.link||''}" style="flex:1;min-width:120px;font-size:12px;color:#999"/>${restCount>1?`<button class="rest-remove" onclick="removeRestRow(${i})">✕</button>`:''}`;
+        div.innerHTML=`<input class="vote-input rest-name" placeholder="식당 ${i+1} 이름" data-idx="${i}" value="${esc(restValues[i]?.name||'')}" style="flex:1;min-width:120px"/><input class="vote-input rest-link" placeholder="링크 (선택)" data-idx="${i}" value="${esc(restValues[i]?.link||'')}" style="flex:1;min-width:120px;font-size:12px;color:#999"/>${restCount>1?`<button class="rest-remove" onclick="removeRestRow(${i})">✕</button>`:''}`;
         list.appendChild(div);
       }
     }
@@ -1359,7 +1361,7 @@
 
         let html=`
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-            <div style="font-size:16px;font-weight:900;color:#333;flex:1">📋 ${v.meta.createdBy}님의 회식 투표</div>
+            <div style="font-size:16px;font-weight:900;color:#333;flex:1">📋 ${esc(v.meta.createdBy)}님의 회식 투표</div>
             <div class="vote-status ${isOpen?'open':'closed'}">${isOpen?'진행 중':'마감'}</div>
           </div>
           <div class="vote-link-box">
@@ -1373,7 +1375,7 @@
             <h4>🙋 내 이름</h4>
             <select class="vote-select" id="voteNameSel" onchange="localStorage.setItem('voterName',this.value)">
               <option value="">선택하세요</option>
-              ${members.map(n=>`<option value="${n}" ${n===curName?'selected':''}>${n}${votedNames.includes(n)?' ✅':''}</option>`).join('')}
+              ${members.map(n=>`<option value="${esc(n)}" ${n===curName?'selected':''}>${esc(n)}${votedNames.includes(n)?' ✅':''}</option>`).join('')}
             </select>
           </div>`;
         }
@@ -1393,13 +1395,13 @@
           const isMyVote=!!myRestVotes[i];
           const rName=typeof r==='string'?r:r.name;
           const rLink=typeof r==='string'?'':r.link||'';
-          const nameHtml=rLink?`<a href="${rLink}" target="_blank" style="color:#4dabf7;text-decoration:none" onclick="event.stopPropagation()">${rName} 🔗</a>`:rName;
+          const nameHtml=rLink?`<a href="${esc(rLink)}" target="_blank" style="color:#4dabf7;text-decoration:none" onclick="event.stopPropagation()">${esc(rName)} 🔗</a>`:esc(rName);
           html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleRestVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${nameHtml}</div><div class="vote-card-count">${restCounts[i]}표</div></div><div class="vote-bar-bg"><div class="vote-bar" style="width:${restCounts[i]/maxRestVote*100}%"></div></div>`;
         });
         html+='</div>';
 
         // 참여 현황
-        html+=`<div class="vote-participants"><strong>참여:</strong> ${votedNames.length>0?votedNames.join(', '):'아직 없음'} <span style="color:#ddd">|</span> <strong>미참여:</strong> ${members.filter(n=>!votedNames.includes(n)).join(', ')}</div>`;
+        html+=`<div class="vote-participants"><strong>참여:</strong> ${votedNames.length>0?votedNames.map(esc).join(', '):'아직 없음'} <span style="color:#ddd">|</span> <strong>미참여:</strong> ${members.filter(n=>!votedNames.includes(n)).map(esc).join(', ')}</div>`;
 
         // 회마만 마감 가능
         if(isOpen&&curName===v.meta.createdBy){
@@ -1419,7 +1421,7 @@
           html+=`<div style="margin-top:20px;padding:18px;background:linear-gradient(135deg,#fff5eb,#fff0f0);border-radius:16px;border:2px solid #ffd6a0">
             <div style="font-size:16px;font-weight:900;color:#ee5a24;margin-bottom:8px">🎉 투표 결과</div>
             <div style="font-size:14px;color:#555;margin-bottom:4px">📅 날짜: <strong>${winDateLabel}</strong></div>
-            <div style="font-size:14px;color:#555">🍽️ 장소: <strong>${winRestLink?`<a href="${winRestLink}" target="_blank" style="color:#4dabf7">${winRestName}</a>`:winRestName}</strong></div>
+            <div style="font-size:14px;color:#555">🍽️ 장소: <strong>${winRestLink?`<a href="${esc(winRestLink)}" target="_blank" style="color:#4dabf7">${esc(winRestName)}</a>`:esc(winRestName)}</strong></div>
           </div>`;
           // 자리 배치
           html+=`<div style="margin-top:16px">
@@ -1522,7 +1524,7 @@
       area.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:12px">${tables.map((t,i)=>`
         <div style="flex:1;min-width:160px;padding:14px;border-radius:14px;background:linear-gradient(135deg,${tableColors[i%tableColors.length]}15,#fff);border:2px solid ${tableColors[i%tableColors.length]}40">
           <div style="font-size:12px;font-weight:900;color:${tableColors[i%tableColors.length]};margin-bottom:8px">🪑 ${i+1}번 테이블</div>
-          ${t.map(n=>`<div style="padding:4px 0;font-size:13px;font-weight:700;color:#555">${n}</div>`).join('')}
+          ${t.map(n=>`<div style="padding:4px 0;font-size:13px;font-weight:700;color:#555">${esc(n)}</div>`).join('')}
         </div>
       `).join('')}</div>`;
     }
