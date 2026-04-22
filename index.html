@@ -1406,7 +1406,7 @@
           const dow=['일','월','화','수','목','금','토'][date.getDay()];
           const label=`${date.getMonth()+1}/${date.getDate()} (${dow})`;
           const isMyVote=!!myDateVotes[i];
-          html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleDateVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${label}</div><div class="vote-card-count">${dateCounts[i]}표</div></div><div class="vote-bar-bg"><div class="vote-bar" style="width:${dateCounts[i]/maxDateVote*100}%"></div></div>`;
+          html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleDateVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${label}</div><div class="vote-card-count">${dateCounts[i]}표</div></div>`;
         });
         if(isMasterHere){
           const today=new Date().toISOString().slice(0,10);
@@ -1423,7 +1423,7 @@
           const rName=typeof r==='string'?r:r.name;
           const rLink=typeof r==='string'?'':r.link||'';
           const nameHtml=rLink?`<a href="${esc(rLink)}" target="_blank" style="color:#4dabf7;text-decoration:none" onclick="event.stopPropagation()">${esc(rName)} 🔗</a>`:esc(rName);
-          html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleRestVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${nameHtml}</div><div class="vote-card-count">${restCounts[i]}표</div></div><div class="vote-bar-bg"><div class="vote-bar" style="width:${restCounts[i]/maxRestVote*100}%"></div></div>`;
+          html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleRestVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${nameHtml}</div><div class="vote-card-count">${restCounts[i]}표</div></div>`;
         });
         if(isMasterHere){
           html+=`<div class="rest-row" style="margin-top:10px;flex-wrap:wrap">
