@@ -467,9 +467,9 @@
         confirmBtn.textContent='✅ 확정 완료!';
         confirmBtn.disabled=true;
         confirmBtn.style.opacity='0.5';
-        // 투표 회마에 자동 세팅
+        // 투표 회마에 자동 세팅 (Firebase 전역 공유)
         confirmedMaster=picked;
-        localStorage.setItem('confirmedMaster',picked);
+        db.ref('currentMaster').set(picked);
         updateMasterDisplay();
       };
       launchConfetti();
@@ -1164,15 +1164,35 @@
       });
     });
 
-    // ===== 회마 관리 =====
-    let confirmedMaster=localStorage.getItem('confirmedMaster')||'';
+    // ===== 회마 관리 (Firebase 전역 공유) =====
+    let confirmedMaster='';
+    let currentVoteListener=null, currentVoteId=null;
     function updateMasterDisplay(){
       const el=document.getElementById('voteMasterDisplay');
       if(el)el.textContent=confirmedMaster?`👑 ${confirmedMaster}`:'뽑기에서 회마를 확정해주세요';
       const btn=document.getElementById('btnCreateVote');
       if(btn)btn.disabled=!confirmedMaster;
     }
-    setTimeout(updateMasterDisplay,0);
+    db.ref('currentMaster').on('value',snap=>{
+      confirmedMaster=snap.val()||'';
+      updateMasterDisplay();
+      // 현재 투표 화면 갱신(마감 버튼 권한 재평가)
+      if(currentVoteId)loadVote(currentVoteId);
+    });
+
+    // 일회성 마이그레이션: 김영수 명의 stale open 투표 삭제 + 현재 회마 이은결로 초기화
+    db.ref('meta/migration_v2').once('value').then(s=>{
+      if(s.val())return;
+      db.ref('votes').orderByChild('meta/status').equalTo('open').once('value').then(snap=>{
+        const votes=snap.val()||{};
+        const ops=Object.keys(votes)
+          .filter(k=>votes[k]?.meta?.createdBy==='김영수')
+          .map(k=>db.ref('votes/'+k).remove());
+        return Promise.all(ops);
+      }).then(()=>db.ref('currentMaster').once('value')).then(ms=>{
+        if(!ms.val())return db.ref('currentMaster').set('이은결');
+      }).then(()=>db.ref('meta/migration_v2').set(true));
+    });
 
     // ===== 캘린더 =====
     const GCAL_HOLIDAY='ko.south_korea#holiday@group.v.calendar.google.com';
@@ -1303,8 +1323,6 @@
     }
 
     // ===== 투표 참여/결과 =====
-    let currentVoteListener=null, currentVoteId=null;
-
     function loadActiveVotes(){
       // 가장 최근 open 투표 찾기
       db.ref('votes').orderByChild('meta/status').equalTo('open').limitToLast(1).once('value',snap=>{
@@ -1373,12 +1391,14 @@
           html+=`
           <div class="vote-section">
             <h4>🙋 내 이름</h4>
-            <select class="vote-select" id="voteNameSel" onchange="localStorage.setItem('voterName',this.value)">
+            <select class="vote-select" id="voteNameSel" onchange="localStorage.setItem('voterName',this.value);loadVote('${voteId}')">
               <option value="">선택하세요</option>
               ${members.map(n=>`<option value="${esc(n)}" ${n===curName?'selected':''}>${esc(n)}${votedNames.includes(n)?' ✅':''}</option>`).join('')}
             </select>
           </div>`;
         }
+
+        const isMasterHere=isOpen&&curName&&curName===confirmedMaster;
 
         html+=`<div class="vote-section"><h4>📅 날짜 투표 (${votedNames.length}/${totalMembers}명 참여)</h4>`;
         v.dateCandidates.forEach((d,i)=>{
@@ -1388,6 +1408,13 @@
           const isMyVote=!!myDateVotes[i];
           html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleDateVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${label}</div><div class="vote-card-count">${dateCounts[i]}표</div></div><div class="vote-bar-bg"><div class="vote-bar" style="width:${dateCounts[i]/maxDateVote*100}%"></div></div>`;
         });
+        if(isMasterHere){
+          const today=new Date().toISOString().slice(0,10);
+          html+=`<div class="rest-row" style="margin-top:10px">
+            <input type="date" class="vote-input" id="addDateInput_${voteId}" min="${today}" style="flex:1;min-width:140px"/>
+            <button onclick="addDateCandidate('${voteId}')" style="padding:10px 16px;border-radius:12px;background:linear-gradient(135deg,#ffa94d,#ff922b);border:none;color:#fff;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap">➕ 날짜 추가</button>
+          </div>`;
+        }
         html+='</div>';
 
         html+=`<div class="vote-section"><h4>🍽️ 식당 투표</h4>`;
@@ -1398,13 +1425,20 @@
           const nameHtml=rLink?`<a href="${esc(rLink)}" target="_blank" style="color:#4dabf7;text-decoration:none" onclick="event.stopPropagation()">${esc(rName)} 🔗</a>`:esc(rName);
           html+=`<div class="vote-card${isMyVote?' voted':''}" ${isOpen?`onclick="toggleRestVote('${voteId}',${i})"`:''}><div class="vote-card-radio"></div><div class="vote-card-text">${nameHtml}</div><div class="vote-card-count">${restCounts[i]}표</div></div><div class="vote-bar-bg"><div class="vote-bar" style="width:${restCounts[i]/maxRestVote*100}%"></div></div>`;
         });
+        if(isMasterHere){
+          html+=`<div class="rest-row" style="margin-top:10px;flex-wrap:wrap">
+            <input class="vote-input" id="addRestName_${voteId}" placeholder="식당 이름" style="flex:1;min-width:120px"/>
+            <input class="vote-input" id="addRestLink_${voteId}" placeholder="링크 (선택)" style="flex:1;min-width:120px;font-size:12px"/>
+            <button onclick="addRestCandidate('${voteId}')" style="padding:10px 16px;border-radius:12px;background:linear-gradient(135deg,#ffa94d,#ff922b);border:none;color:#fff;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap">➕ 식당 추가</button>
+          </div>`;
+        }
         html+='</div>';
 
         // 참여 현황
         html+=`<div class="vote-participants"><strong>참여:</strong> ${votedNames.length>0?votedNames.map(esc).join(', '):'아직 없음'} <span style="color:#ddd">|</span> <strong>미참여:</strong> ${members.filter(n=>!votedNames.includes(n)).map(esc).join(', ')}</div>`;
 
-        // 회마만 마감 가능
-        if(isOpen&&curName===v.meta.createdBy){
+        // 현재 회마(Firebase currentMaster)만 마감 가능
+        if(isOpen&&curName&&curName===confirmedMaster){
           html+=`<button class="btn-vote-close" onclick="closeVote('${voteId}')">🔒 투표 마감하기</button>`;
         }
 
@@ -1460,6 +1494,43 @@
       });
     }
 
+    function addDateCandidate(voteId){
+      if(!confirmedMaster)return alert('회마만 후보를 추가할 수 있습니다');
+      const inp=document.getElementById('addDateInput_'+voteId);
+      const ds=inp?.value;
+      if(!ds)return alert('날짜를 선택해주세요');
+      const today=new Date(new Date().toDateString());
+      if(new Date(ds)<today)return alert('지난 날짜는 추가할 수 없습니다');
+      const ref=db.ref(`votes/${voteId}/dateCandidates`);
+      ref.once('value',snap=>{
+        const arr=snap.val()||[];
+        if(arr.includes(ds))return alert('이미 추가된 날짜입니다');
+        arr.push(ds);
+        arr.sort();
+        ref.set(arr);
+        if(inp)inp.value='';
+      });
+    }
+
+    function addRestCandidate(voteId){
+      if(!confirmedMaster)return alert('회마만 후보를 추가할 수 있습니다');
+      const nameInp=document.getElementById('addRestName_'+voteId);
+      const linkInp=document.getElementById('addRestLink_'+voteId);
+      const name=nameInp?.value.trim();
+      const link=linkInp?.value.trim()||'';
+      if(!name)return alert('식당 이름을 입력해주세요');
+      const ref=db.ref(`votes/${voteId}/restaurantCandidates`);
+      ref.once('value',snap=>{
+        const arr=snap.val()||[];
+        const dup=arr.some(r=>(typeof r==='string'?r:r.name)===name);
+        if(dup)return alert('이미 추가된 식당입니다');
+        arr.push({name,link});
+        ref.set(arr);
+        if(nameInp)nameInp.value='';
+        if(linkInp)linkInp.value='';
+      });
+    }
+
     function closeVote(voteId){
       if(!confirm('투표를 마감하시겠습니까? 마감 후 회마가 초기화됩니다.'))return;
       // 투표 결과 계산 후 히스토리에 추가
@@ -1499,10 +1570,8 @@
         // 마감 처리
         db.ref(`votes/${voteId}/meta/status`).set('closed');
       });
-      // 회마 초기화
-      confirmedMaster='';
-      localStorage.removeItem('confirmedMaster');
-      updateMasterDisplay();
+      // 회마 초기화 (Firebase에서 삭제 → 전역 동기화)
+      db.ref('currentMaster').remove();
       // 투표 생성 폼 초기화
       selectedDates=[];
       restValues=[{name:'',link:''}];
