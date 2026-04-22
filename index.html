@@ -307,6 +307,7 @@
     const COLORS = ['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#38d9a9','#4dabf7','#748ffc','#da77f2','#f783ac','#e599f7','#63e6be','#a9e34b','#ffc078','#74c0fc','#b197fc'];
 
     function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+    function cleanName(s){return (s||'').trim().replace(/\d+$/,'');}
 
     let currentTheme = localStorage.getItem('theme') || 'wheel';
     function getEffectiveDefault() { const c = localStorage.getItem('customDefault'); return c ? JSON.parse(c) : [...DEFAULT_MEMBERS]; }
@@ -351,7 +352,7 @@
           <div class="dinner-emoji">${d.emoji||'🍽️'}</div>
           <div class="dinner-info">
             <div class="dinner-date">${esc(d.date)}</div>
-            <div class="dinner-master">👑 회마: ${esc(d.master)}</div>
+            <div class="dinner-master">👑 회마: ${esc(cleanName(d.master))}</div>
             <div class="dinner-place">📍 ${d.link?`<a href="${esc(d.link)}" target="_blank">${esc(d.place)}</a>`:esc(d.place)}</div>
           </div>
         </div>
@@ -1194,6 +1195,18 @@
       }).then(()=>db.ref('meta/migration_v2').set(true));
     });
 
+    // 일회성 마이그레이션: dinnerHistory master 끝 숫자 제거
+    db.ref('meta/migration_v3').once('value').then(s=>{
+      if(s.val())return;
+      db.ref('dinnerHistory').once('value').then(snap=>{
+        const data=snap.val()||{};
+        const ops=Object.entries(data)
+          .filter(([,v])=>v?.master&&v.master!==cleanName(v.master))
+          .map(([k,v])=>db.ref('dinnerHistory/'+k+'/master').set(cleanName(v.master)));
+        return Promise.all(ops);
+      }).then(()=>db.ref('meta/migration_v3').set(true));
+    });
+
     // ===== 캘린더 =====
     const GCAL_HOLIDAY='ko.south_korea#holiday@group.v.calendar.google.com';
     const GCAL_KEY='AIzaSyAj2LQJu2aV93ZYBiui_6UHHAKU1aCsYGU';
@@ -1565,7 +1578,7 @@
         for(const[k,v2]of Object.entries(emojiMap)){if(restName.includes(k)){emoji=v2;break;}}
         // Firebase에 히스토리 추가
         db.ref('dinnerHistory').push({
-          date:dateLabel,master:v.meta.createdBy,place:restName,link:restLink,emoji:emoji,createdAt:Date.now()
+          date:dateLabel,master:cleanName(v.meta.createdBy),place:restName,link:restLink,emoji:emoji,createdAt:Date.now()
         });
         // 마감 처리
         db.ref(`votes/${voteId}/meta/status`).set('closed');
